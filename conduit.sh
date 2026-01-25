@@ -1,21 +1,20 @@
 #!/bin/bash
-# Updated: 2026-01-24 06:01 UTC
 #
 # ╔═══════════════════════════════════════════════════════════════════╗
-# ║       🚀 PSIPHON CONDUIT MANAGER v1.0.0                          ║
+# ║        🚀 PSIPHON CONDUIT MANAGER v1.0.0                          ║
 # ║                                                                   ║
-# ║  One-click setup for Psiphon Conduit                             ║
+# ║  One-click setup for Psiphon Conduit                              ║
 # ║                                                                   ║
-# ║  • Installs Docker (if needed)                                   ║
-# ║  • Runs Conduit in Docker with live stats                        ║
-# ║  • Auto-start on boot via systemd/OpenRC/SysVinit           ║
-# ║  • Easy management via CLI or interactive menu                   ║
+# ║  • Installs Docker (if needed)                                    ║
+# ║  • Runs Conduit in Docker with live stats                         ║
+# ║  • Auto-start on boot via systemd/OpenRC/SysVinit                 ║
+# ║  • Easy management via CLI or interactive menu                    ║
 # ║                                                                   ║
-# ║  GitHub: https://github.com/Psiphon-Inc/conduit                  ║
+# ║  GitHub: https://github.com/Psiphon-Inc/conduit                   ║
 # ╚═══════════════════════════════════════════════════════════════════╝
 #
 # Usage:
-#   curl -sL https://your-url/conduit.sh | sudo bash
+# curl -sL https://raw.githubusercontent.com/SamNet-dev/conduit-manager/main/conduit.sh | sudo bash
 #
 # Reference: https://github.com/ssmirr/conduit/releases/tag/87cc1a3
 # Conduit CLI options:
@@ -602,7 +601,7 @@ fi
 print_header() {
     echo -e "${CYAN}"
     echo "╔═══════════════════════════════════════════════════════════════════╗"
-    echo "║                🚀 PSIPHON CONDUIT MANAGER v${VERSION}             ║"
+    printf "║                🚀 PSIPHON CONDUIT MANAGER v%-5s              ║\n" "${VERSION}"
     echo "╚═══════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
 }
@@ -612,8 +611,8 @@ print_live_stats_header() {
     echo "╔═══════════════════════════════════════════════════════════════════╗"
     echo "║                    CONDUIT LIVE STATISTICS                        ║"
     echo "╠═══════════════════════════════════════════════════════════════════╣"
-    echo -e "║  Max Clients: ${GREEN}${MAX_CLIENTS}${CYAN}                                              ║"
-    echo -e "║  Bandwidth:   ${GREEN}${BANDWIDTH} Mbps${CYAN}                                   ║"
+    printf "║  Max Clients: ${GREEN}%-52s${CYAN}║\n" "${MAX_CLIENTS}"
+    printf "║  Bandwidth:   ${GREEN}%-52s${CYAN}║\n" "${BANDWIDTH} Mbps"
     echo "║                                                                   ║"
     echo "║  Press Ctrl+C to exit                                             ║"
     echo "╚═══════════════════════════════════════════════════════════════════╝"
@@ -645,25 +644,30 @@ show_dashboard() {
     # Setup trap to catch signals gracefully
     trap 'stop_dashboard=1' SIGINT SIGTERM
     
+    # Use alternate screen buffer if available for smoother experience
+    tput smcup 2>/dev/null || true
     echo -ne "\033[?25l" # Hide cursor
+    # Initial clear
     clear
 
     while [ $stop_dashboard -eq 0 ]; do
-        echo -ne "\033[H" # Move cursor to top-left
+        # Move cursor to top-left (0,0) instead of just home escape code
+        tput cup 0 0 2>/dev/null || echo -ne "\033[H"
+        
         print_live_stats_header
         
-        show_status
+        show_status "live"
         
         # Get and show resource usage
         get_container_resources
         echo ""
-        echo -e "${CYAN}═══ RESOURCE USAGE ═══${NC}"
-        echo -e "  CPU:          ${YELLOW}${CPU_USAGE}${NC}"
-        echo -e "  Memory:       ${YELLOW}${MEM_USAGE}${NC} (${MEM_PERC})"
+        echo -e "${CYAN}═══ RESOURCE USAGE ═══${NC}\033[K"
+        echo -e "  CPU:          ${YELLOW}${CPU_USAGE}${NC}\033[K"
+        echo -e "  Memory:       ${YELLOW}${MEM_USAGE}${NC} (${MEM_PERC})\033[K"
         echo ""
-        echo -e "${BOLD}Refreshes every 10 seconds. Press any key to return to menu...${NC}"
+        echo -e "${BOLD}Refreshes every 10 seconds. Press any key to return to menu...${NC}\033[K"
         
-        # Clear any leftover content below
+        # Clear any leftover content below (Erase Down)
         tput ed 2>/dev/null || true
         
         # Wait 10 seconds for keypress. Signal will interrupt this read.
@@ -673,6 +677,8 @@ show_dashboard() {
     done
     
     echo -ne "\033[?25h" # Show cursor
+    # Restore main screen buffer
+    tput rmcup 2>/dev/null || true
     trap - SIGINT SIGTERM # Reset traps
 }
 
@@ -686,33 +692,55 @@ show_live_stats() {
 }
 
 show_status() {
+    local mode="${1:-normal}" # 'live' mode adds line clearing
+    local EL=""
+    if [ "$mode" == "live" ]; then
+        EL="\033[K" # Erase Line escape code
+    fi
+
     echo ""
-    echo -e "${CYAN}═══ CONDUIT STATUS ═══${NC}"
+    echo -e "${CYAN}═══ CONDUIT STATUS ═══${NC}${EL}"
     
     if docker ps 2>/dev/null | grep -q "[[:space:]]conduit$"; then
-        echo -e "  Container:    ${GREEN}Running${NC}"
-        
-        # Get last stats from logs
-        local stats=$(docker logs --tail 100 conduit 2>&1 | grep "STATS" | tail -1)
         if [ -n "$stats" ]; then
-            local connected=$(echo "$stats" | sed -n 's/.*Connected:[[:space:]]*\([0-9]*\).*/\1/p')
-            local upload=$(echo "$stats" | sed -n 's/.*Up:[[:space:]]*\([^|]*\).*/\1/p' | tr -d ' ')
-            local download=$(echo "$stats" | sed -n 's/.*Down:[[:space:]]*\([^|]*\).*/\1/p' | tr -d ' ')
-            [ -n "$connected" ] && echo -e "  Clients:      ${GREEN}${connected}${NC} connected"
-            [ -n "$upload" ] && echo -e "  Upload:       ${upload}"
-            [ -n "$download" ] && echo -e "  Download:     ${download}"
+            # Already have stats from check below? 
+            # Actually, let's fetch it here with deeper history
+            local stats=$(docker logs --tail 1000 conduit 2>&1 | grep "STATS" | tail -1)
         else
-            echo -e "  Stats:        ${YELLOW}Waiting for first stats...${NC}"
+             local stats=$(docker logs --tail 1000 conduit 2>&1 | grep "STATS" | tail -1)
+        fi
+        
+        if [ -n "$stats" ]; then
+            local connecting=$(echo "$stats" | sed -n 's/.*Connecting:[[:space:]]*\([0-9]*\).*/\1/p')
+            local connected=$(echo "$stats" | sed -n 's/.*Connected:[[:space:]]*\([0-9]*\).*/\1/p')
+            local upload=$(echo "$stats" | sed -n 's/.*Up:[[:space:]]*\([^|]*\).*/\1/p' | xargs)
+            local download=$(echo "$stats" | sed -n 's/.*Down:[[:space:]]*\([^|]*\).*/\1/p' | xargs)
+            local uptime=$(echo "$stats" | sed -n 's/.*Uptime:[[:space:]]*\(.*\)/\1/p' | xargs)
+            
+            [ -n "$uptime" ] && echo -e "  Container:    ${GREEN}Running${NC} (${CYAN}Uptime: ${uptime}${NC})${EL}" || echo -e "  Container:    ${GREEN}Running${NC}${EL}"
+            
+            # Default to 0 if missing/empty
+            connecting=${connecting:-0}
+            connected=${connected:-0}
+            
+            echo -e "  Clients:      ${GREEN}${connected}${NC} connected, ${YELLOW}${connecting}${NC} connecting${EL}"
+            
+            [ -n "$upload" ] && echo -e "  Upload:       ${CYAN}${upload}${NC}${EL}"
+            [ -n "$download" ] && echo -e "  Download:     ${CYAN}${download}${NC}${EL}"
+        else
+            echo -e "  Container:    ${GREEN}Running${NC}${EL}"
+            echo -e "  Stats:        ${YELLOW}Waiting for first stats...${NC}${EL}"
         fi
         
     else
-        echo -e "  Container:    ${RED}Stopped${NC}"
+        echo -e "  Container:    ${RED}Stopped${NC}${EL}"
     fi
     
     echo ""
-    echo -e "${CYAN}═══ SETTINGS ═══${NC}"
-    echo -e "  Max Clients:  ${MAX_CLIENTS}"
-    echo -e "  Bandwidth:    ${BANDWIDTH} Mbps"
+    echo -e "${CYAN}═══ SETTINGS ═══${NC}${EL}"
+    echo -e "  Max Clients:  ${MAX_CLIENTS}${EL}"
+    echo -e "  Bandwidth:    ${BANDWIDTH} Mbps${EL}"
+
     
     echo ""
     echo -e "${CYAN}═══ AUTO-START SERVICE ═══${NC}"
