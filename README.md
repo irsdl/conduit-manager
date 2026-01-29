@@ -117,16 +117,17 @@ The interactive menu (`conduit menu`) provides access to all features:
 
 | Option | Description |
 |--------|-------------|
-| **1** | Live Dashboard — real-time stats with active clients and top upload by country |
-| **2** | Start / Stop / Restart containers |
-| **3** | Update Conduit image |
-| **4** | Live Peer Traffic — per-country traffic table with speed and client counts |
-| **5** | Container Settings — configure max-clients and bandwidth per container |
-| **6** | Manage Containers — add or remove containers (up to 5) |
-| **7** | Backup & Restore node identity |
-| **8** | Health Check diagnostics |
-| **9** | Uninstall |
-| **a** | Advanced Stats — top 5 charts for peers, download, upload, unique IPs |
+| **1** | View status dashboard — real-time stats with active clients and top upload by country |
+| **2** | Live connection stats — streaming stats from Docker logs |
+| **3** | View logs — raw Docker log output |
+| **4** | Live peers by country — per-country traffic table with speed and client counts |
+| **5** | Start Conduit |
+| **6** | Stop Conduit |
+| **7** | Restart Conduit |
+| **8** | Update Conduit image |
+| **9** | Settings & Tools — max-clients, bandwidth, backup, restore, health check, uninstall |
+| **c** | Manage containers — add or remove containers (up to 5) |
+| **a** | Advanced stats — top 5 charts for peers, download, upload, unique IPs |
 | **i** | Info & Help — multi-page guide with tracker, stats, containers, privacy, about |
 | **0** | Exit |
 
@@ -284,15 +285,16 @@ conduit help         # راهنما
 
 | گزینه | توضیحات |
 |-------|---------|
-| **1** | داشبورد زنده — آمار لحظه‌ای با کلاینت‌های فعال و آپلود برتر |
-| **2** | شروع / توقف / ریستارت کانتینرها |
-| **3** | به‌روزرسانی ایمیج |
-| **4** | ترافیک زنده — جدول ترافیک به تفکیک کشور |
-| **5** | تنظیمات کانتینر — پیکربندی هر کانتینر |
-| **6** | مدیریت کانتینرها — اضافه یا حذف (تا ۵) |
-| **7** | پشتیبان‌گیری و بازیابی |
-| **8** | بررسی سلامت |
-| **9** | حذف نصب |
+| **1** | داشبورد وضعیت — آمار لحظه‌ای با کلاینت‌های فعال و آپلود برتر |
+| **2** | آمار زنده اتصال — استریم آمار از لاگ داکر |
+| **3** | مشاهده لاگ — خروجی لاگ داکر |
+| **4** | ترافیک زنده به تفکیک کشور — جدول ترافیک با سرعت و تعداد کلاینت |
+| **5** | شروع کاندوییت |
+| **6** | توقف کاندوییت |
+| **7** | ریستارت کاندوییت |
+| **8** | به‌روزرسانی ایمیج |
+| **9** | تنظیمات و ابزارها — پهنای باند، پشتیبان‌گیری، بازیابی، بررسی سلامت، حذف نصب |
+| **c** | مدیریت کانتینرها — اضافه یا حذف (تا ۵) |
 | **a** | آمار پیشرفته — نمودار برترین کشورها |
 | **i** | راهنما — توضیحات ردیاب، آمار، کانتینرها، حریم خصوصی |
 | **0** | خروج |
